@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\BookStore\Domain\Model;
 
+use App\BookStore\Domain\Event\BookDiscounted;
 use App\BookStore\Domain\Event\BookPublished;
 use App\BookStore\Domain\Event\RecordsEvents;
 use App\BookStore\Domain\ValueObject\AuthorId;
@@ -124,7 +125,10 @@ final class Book
 
     public function applyDiscount(Discount $discount): void
     {
+        $previousPrice = $this->price;
         $this->price = $this->price->applyDiscount($discount);
+
+        $this->record(new BookDiscounted($this->id, $this->name, $previousPrice, $this->price));
     }
 
     public function review(ReviewId $id, ReviewRating $rating, ReviewComment $comment, \DateTimeImmutable $writtenAt): Review

@@ -91,4 +91,39 @@ final class DiscountBookTest extends ApiTestCase
             $eventBus->findDispatched(BookDiscounted::class),
         );
     }
+
+    #[Group('tp')]
+    public function testListTheDiscountedBooks(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+
+        /** @var BookRepositoryInterface $bookRepository */
+        $bookRepository = self::getContainer()->get(BookRepositoryInterface::class);
+
+        $book = BookFactory::create(name: 'Dune', price: 1500);
+        $bookRepository->add($book);
+        $bookRepository->add(BookFactory::create(name: 'Neuromancer', price: 1000));
+
+        $client->request('POST', \sprintf('/api/books/%s/discount', $book->id), [
+            'json' => [
+                'discountPercentage' => 20,
+            ],
+        ]);
+
+        $response = $client->request('GET', '/api/books/discounted');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(1, $response->toArray()['totalItems']);
+        self::assertJsonContains([
+            'member' => [
+                [
+                    '@id' => \sprintf('/api/books/%s', $book->id),
+                    'name' => 'Dune',
+                    'previousPrice' => 1500,
+                    'price' => 1200,
+                ],
+            ],
+        ]);
+    }
 }

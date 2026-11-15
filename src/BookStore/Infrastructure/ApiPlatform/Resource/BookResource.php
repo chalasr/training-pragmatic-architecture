@@ -19,6 +19,7 @@ use ApiPlatform\State\ParameterProvider\IriConverterParameterProvider;
 use App\BookStore\Infrastructure\ApiPlatform\ObjectMapper\AuthorIriTransform;
 use App\BookStore\Infrastructure\ApiPlatform\Output\BookListItemOutput;
 use App\BookStore\Infrastructure\ApiPlatform\Output\ClassificationOutput;
+use App\BookStore\Infrastructure\ApiPlatform\Output\DiscountedBookOutput;
 use App\BookStore\Infrastructure\ApiPlatform\Payload\AmendBookPayload;
 use App\BookStore\Infrastructure\ApiPlatform\Payload\AnonymizeAuthorBooksPayload;
 use App\BookStore\Infrastructure\ApiPlatform\Payload\ClassifyBookPayload;
@@ -35,6 +36,7 @@ use App\BookStore\Infrastructure\ApiPlatform\State\Processor\DiscountBookProcess
 use App\BookStore\Infrastructure\ApiPlatform\State\Provider\BookCollectionProvider;
 use App\BookStore\Infrastructure\ApiPlatform\State\Provider\BookItemProvider;
 use App\BookStore\Infrastructure\ApiPlatform\State\Provider\CheapestBooksProvider;
+use App\BookStore\Infrastructure\ApiPlatform\State\Provider\DiscountedBooksProvider;
 use App\BookStore\Infrastructure\ReadModel\BookView;
 use App\Shared\Infrastructure\ApiPlatform\ObjectMapper\ScalarTransform;
 use Symfony\Component\ObjectMapper\Attribute\Map;
@@ -63,6 +65,14 @@ use Symfony\Component\Validator\Constraints as Assert;
                     default: 10,
                 ),
             ],
+        ),
+        new GetCollection(
+            '/books/discounted',
+            openapi: new Operation(summary: 'Find discounted Book resources.'),
+            output: DiscountedBookOutput::class,
+            itemUriTemplate: self::ITEM_URI_TEMPLATE,
+            paginationEnabled: false,
+            provider: DiscountedBooksProvider::class,
         ),
         new Post(
             '/books/anonymize',
