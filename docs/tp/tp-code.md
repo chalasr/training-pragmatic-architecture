@@ -1,11 +1,9 @@
 # TP de code : hexagonal, événementiel, CQRS
 
-**Durée** : 45 min, en binôme · **Partir de** `etape-0` · **Solution** `etape-1`
-
-En pair programming : l'un code (le « pilote »), l'autre lit, questionne et vérifie les règles (le « navigateur »). Seul le poste du pilote a besoin de l'installation.
+**Durée** : 45 min, chacun sur sa machine · **Partir de** `etape-0` · **Solution** `etape-1`
 
 ```
-git switch -c tp-binome origin/etape-0
+git switch -c tp origin/etape-0
 ```
 
 ## Objectif
@@ -43,6 +41,100 @@ docker compose exec php bin/phpunit --group tp
 ```
 
 Attendu : `OK (3 tests, 5 assertions)`.
+
+#### Indices, du plus léger au plus complet
+
+Vous ne connaissez pas PHP ? Ce n'est pas un obstacle : chaque fichier à écrire a un **jumeau** dans la publication d'un livre. Ouvrez-les côte à côte et recopiez en changeant les noms.
+
+<details>
+<summary>Indice 1 : où regarder</summary>
+
+| À écrire (la remise) | Son jumeau (la publication) |
+|---|---|
+| `src/BookStore/Domain/Event/BookDiscounted.php` | `src/BookStore/Domain/Event/BookPublished.php` |
+| l'appel à `$this->record(...)` dans `Book::applyDiscount()` | le même appel, à la fin du constructeur de `Book` |
+| la publication dans `DiscountBookCommandHandler` | la fin de `CreateBookCommandHandler` |
+| `src/Shared/Domain/Event/Integration/BookDiscounted.php` | `src/Shared/Domain/Event/Integration/BookPublished.php` |
+| `src/BookStore/Application/EventListener/AnnounceBookDiscountedListener.php` | `AnnounceBookPublishedListener.php`, dans le même dossier |
+| `src/Subscription/EventListener/AnnounceDiscountToSubscribersListener.php` | `AnnounceBookToSubscribersListener.php`, dans le même dossier |
+
+Les tests disent exactement ce qui est attendu : `testADiscountIsRecorded` dans `tests/BookStore/Unit/AggregateInvariantsTest.php`, `testADiscountIsPublishedAsAnIntegrationEvent` dans `tests/BookStore/Acceptance/DiscountBookTest.php`, `testAnnounceADiscountToEverySubscriber` dans `tests/Subscription/Acceptance/AnnounceDiscountToSubscribersTest.php`.
+
+</details>
+
+<details>
+<summary>Indice 2 : un peu de syntaxe PHP</summary>
+
+- Un fichier = une classe ; la ligne `namespace` correspond au dossier (`src/BookStore/Domain/Event` → `App\BookStore\Domain\Event`), et le nom du fichier au nom de la classe.
+- `use Un\Espace\Classe;` en haut du fichier importe une classe d'un autre dossier. `use ... as Alias;` lui donne un autre nom : utile quand deux classes s'appellent `BookDiscounted`.
+- `public function __construct(public BookId $bookId, ...)` déclare et remplit les propriétés en une ligne.
+- `$this->price` est une propriété de l'objet courant ; `$event->price->value` lit la valeur entière d'un `Price`.
+- `#[AsEventListener]` au-dessus d'une classe en fait un listener ; le type du paramètre de `__invoke(...)` dit ce qu'il écoute.
+- Après chaque fichier, lancez les tests : le message d'erreur dit ce qui manque (`Class "..." not found` : le fichier ou son `namespace` ; `non-existent service` : le listener n'existe pas ou n'a pas `#[AsEventListener]`).
+
+</details>
+
+<details>
+<summary>Indice 3 : l'agrégat et le handler, presque la solution</summary>
+
+Dans `Book::applyDiscount()`, gardez l'ancien prix avant de le remplacer, puis enregistrez l'événement :
+
+```php
+$previousPrice = $this->price;
+$this->price = $this->price->applyDiscount($discount);
+
+$this->record(new BookDiscounted($this->id, $this->name, $previousPrice, $this->price));
+```
+
+(sans oublier `use App\BookStore\Domain\Event\BookDiscounted;` en haut du fichier).
+
+Dans `DiscountBookCommandHandler`, ajoutez `private EventBusInterface $eventBus` au constructeur, comme dans `CreateBookCommandHandler`, et après `applyDiscount()` :
+
+```php
+foreach ($book->releaseEvents() as $event) {
+    $this->eventBus->dispatch($event);
+}
+```
+
+</details>
+
+<details>
+<summary>Indice 4 : le contrat et les deux listeners, presque la solution</summary>
+
+- Le contrat : copiez `Shared/Domain/Event/Integration/BookPublished.php`, renommez la classe en `BookDiscounted`, et mettez quatre propriétés : `public string $bookId`, `public string $title`, `public int $previousPrice`, `public int $price`.
+- La traduction : copiez `AnnounceBookPublishedListener.php` en `AnnounceBookDiscountedListener.php`. Le paramètre de `__invoke` devient `BookDiscounted $event` (l'interne), et l'objet publié devient :
+  ```php
+  new BookDiscountedIntegrationEvent(
+      (string) $event->bookId,
+      $event->name->value,
+      $event->previousPrice->value,
+      $event->price->value,
+  )
+  ```
+  avec `use App\Shared\Domain\Event\Integration\BookDiscounted as BookDiscountedIntegrationEvent;`.
+- L'annonce : copiez `AnnounceBookToSubscribersListener.php` en `AnnounceDiscountToSubscribersListener.php`, importez `App\Shared\Domain\Event\Integration\BookDiscounted`, et écrivez :
+  ```php
+  $this->logger->info('Announcing "{title}" now at {price} instead of {previousPrice} to {email}.', [
+      'title' => $event->title,
+      'price' => $event->price,
+      'previousPrice' => $event->previousPrice,
+      'email' => $subscription->email,
+  ]);
+  ```
+
+</details>
+
+#### Le point de rattrapage (16h40)
+
+L'étape 2 est la leçon principale du TP : tout le monde doit la vivre. À 16h40, si l'étape 1 n'est pas verte, récupérez sa solution, et seulement elle, d'une seule commande :
+
+```
+git fetch origin
+git checkout origin/etape-1 -- src/BookStore/Domain/Event/BookDiscounted.php src/BookStore/Domain/Model/Book.php src/BookStore/Application/Command/DiscountBookCommandHandler.php src/BookStore/Application/EventListener/AnnounceBookDiscountedListener.php src/Shared/Domain/Event/Integration/BookDiscounted.php src/Subscription/EventListener/AnnounceDiscountToSubscribersListener.php
+docker compose exec php bin/phpunit --group tp
+```
+
+Attendu : `OK (3 tests, 5 assertions)`. Ces six fichiers remplacent les vôtres ; passez ensuite à l'étape 2.
 
 ### Étape 2 : l'erreur volontaire (15 min)
 
