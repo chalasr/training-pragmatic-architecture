@@ -26,7 +26,7 @@ Ce dépôt part d'[apip-ddd](https://github.com/mtarld/apip-ddd), de [Mathias Ar
 - **Docker installé et démarré** (Docker Desktop sous macOS et Windows ; sous Windows, backend WSL 2). C'est tout : pas besoin de PHP ni de PostgreSQL sur votre machine.
 - Vérification : `git --version` et `docker run --rm hello-world`.
 - Un éditeur de code : PhpStorm, ou VS Code avec l'extension **PHP Intelephense** (qui fonctionne sans PHP installé).
-- Le TP se fait en binôme sur le poste de celui qui code : l'installation est indispensable pour lui, facultative pour l'autre.
+- Chaque participant fait le TP sur sa propre machine : l'installation est indispensable pour tout le monde, à faire avant la formation.
 
 ## Installation (une seule fois, avant la formation)
 
@@ -91,10 +91,10 @@ Le fichier `castor.php` regroupe les mêmes commandes pour [Castor](https://cast
 | `etape-0` | Le point de départ : l'énoncé du TP et les tests à faire passer |
 | `etape-1` | La solution, avec deux étapes de plus à étudier : l'asynchrone et une projection de lecture |
 
-Travaillez dans une branche à vous (le préfixe `origin/` est nécessaire : après le clone, seule `etape-0` existe en local) :
+Travaillez dans votre propre branche (le préfixe `origin/` est nécessaire : après le clone, seule `etape-0` existe en local) :
 
 ```
-git switch -c tp-binome origin/etape-0
+git switch -c tp origin/etape-0
 ```
 
 En retard ou bloqué ? Regardez ce que la solution change, `git diff origin/etape-0 origin/etape-1`, ou repartez-en : `git switch -c tp-solution origin/etape-1`.
