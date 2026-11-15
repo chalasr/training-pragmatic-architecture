@@ -1,43 +1,108 @@
-# Domain Driven Design and API Platform 4
+# La librairie : projet de travaux pratiques, formation Architecture pragmatique
 
-An example project of **Domain Driven Design** using **API Platform 4** and following the **hexagonal architecture**.
+Une librairie en ligne : un catalogue de livres, des avis, des commandes, et des abonnés prévenus des nouveautés. C'est une API (API Platform 4.3, Symfony 8.1, PHP 8.5, PostgreSQL), servie sur deux transports : `/api` pour les navigateurs, `/mcp` pour les agents IA.
 
-The first version of this project has been explained during the [API Platform conference 2022](https://api-platform.com/con/2022/conferences/domain-driven-design-with-api-platform-3/)
-([slides](https://slides.com/mathiasarlaud/apip-con-ddd-api-p-3), [video](https://www.youtube.com/watch?v=SSQal3Msi9g))
-and during [SymfonyLive Paris 2022](https://live.symfony.com/2022-paris/schedule/du-ddd-avec-api-platform).
-It has since been rewritten for API Platform 4, Symfony 8.1 and PHP 8.5.
+Elle est organisée en **monolithe modulaire** : un seul déployable, deux bounded contexts dont la frontière est vérifiée par un outil.
 
-## Getting started
-It requires [Docker](https://docs.docker.com/get-docker/) and [Castor](https://castor.jolicode.com/getting-started/installation/).
+- **BookStore** (`src/BookStore`) porte l'architecture : **hexagonale** et **CQRS**.
+  - `Domain` : le modèle (agrégats, value objects, événements) et les ports (interfaces des repositories).
+  - `Application` : les cas d'usage, une commande et un handler chacun. Une commande ne renvoie rien.
+  - `Infrastructure` : tout ce qui parle au monde extérieur (Doctrine, API Platform, Symfony), et un adaptateur en mémoire pour chaque repository.
+  - Les écritures passent par le modèle ; les lectures le contournent, par une projection (`BookViewFinder`).
+- **Subscription** (`src/Subscription`) est **volontairement un simple CRUD** : une entité Doctrine exposée directement par API Platform. Une architecture se paie là où elle rapporte, pas sur chaque table.
+- **Shared** (`src/Shared`) contient le socle commun, dont les **événements d'intégration** (`src/Shared/Domain/Event/Integration`) : le seul langage que les deux contextes partagent.
 
-If you want to try to use and tweak that example, you can follow these steps:
+Deux règles sont vérifiées par [deptrac](https://github.com/deptrac/deptrac) : `deptrac_bc.yaml` empêche BookStore et Subscription de se connaître, `deptrac_hexa.yaml` garde les couches dans l'ordre.
 
-1. Run `git clone https://github.com/mtarld/apip-ddd` to clone the project
-1. Run `castor install` to install the project
-1. Run `castor start` to up your containers
-1. Visit https://localhost/api and play with your app!
+L'énoncé du TP de code : [docs/tp/tp-code.md](docs/tp/tp-code.md).
 
-Run `castor` on its own to list every task, `castor test` for PHPUnit and `castor ci` for the whole gate.
+## D'où vient ce projet
 
-## What's inside
-`BookStore` is the bounded context that carries the architecture. `Domain` holds the model: aggregates, value objects, repository interfaces and events. `Application` holds the use cases, one command and one handler each. `Infrastructure` holds everything that talks to the outside world: Doctrine, API Platform, Symfony, and an in-memory double of every repository.
+Ce dépôt part d'[apip-ddd](https://github.com/mtarld/apip-ddd), de [Mathias Arlaud](https://github.com/mtarld) avec l'aide de [Robin Chalas](https://github.com/chalasr), sous licence MIT (voir [LICENSE](LICENSE)). L'historique d'origine est conservé. C'est une approche, discutable et discutée en formation, pas un modèle à recopier tel quel.
 
-Two boundaries are enforced in CI. `deptrac_bc.yaml` keeps `BookStore` and `Subscription` from knowing about each other, `deptrac_hexa.yaml` keeps the layers in order.
+## Prérequis
 
-Writes go through the model. A processor turns the payload into a command, the handler loads an aggregate and changes it, and nothing comes back: a command that answers cannot be routed to a transport, so the identity is handed in rather than asked for. Reads go around the model instead, through a DQL projection, so loading a book to rename it no longer loads its reviews.
+- **Git**.
+- **Docker installé et démarré** (Docker Desktop sous macOS et Windows ; sous Windows, backend WSL 2). C'est tout : pas besoin de PHP ni de PostgreSQL sur votre machine.
+- Vérification : `git --version` et `docker run --rm hello-world`.
+- Un éditeur de code : PhpStorm, ou VS Code avec l'extension **PHP Intelephense** (qui fonctionne sans PHP installé).
 
-Five relations are modelled, each for a different rule. A review lives inside its book and is only reachable through it. An author is referenced by identity, never by association. A classification is a link that carries its own date, so it is an entity rather than a join table. An order copies the name and price it bought, so repricing a book does not rewrite history. And `Subscription` hears about a new book through a published event, not through an import.
+## Installation (une seule fois, avant la formation)
 
-`Subscription` is deliberately not that. It is a Doctrine entity exposed directly as an `#[ApiResource]`, there to show that this architecture is a cost you pay where it buys you something, not something to apply to every table.
+```
+git clone https://github.com/chalasr/training-pragmatic-architecture.git
+cd training-pragmatic-architecture
+docker compose build
+docker compose up -d --wait
+docker compose exec php bin/console doctrine:schema:update --force
+docker compose exec php bin/phpunit
+```
 
-The same commands serve two transports: `/api` for browsers, `/mcp` for agents. A tool reuses the processor that already serves HTTP, so an agent goes through the same command bus and the same aggregates.
+- `docker compose build` prend quelques minutes la première fois (téléchargement de l'image PHP 8.5 et compilation des extensions). Lancez-le avant la formation, pas pendant.
+- `docker compose up -d --wait` installe aussi les dépendances PHP au premier démarrage (dossier `vendor/`), puis rend la main quand tout est prêt.
+- **C'est bon si** la dernière commande se termine par une ligne verte `OK (... tests, ... assertions)`.
 
-Every repository has two implementations, Doctrine and in-memory, and a single test suite that both have to pass.
+L'API se visite sur https://localhost/api (le certificat est auto-signé : acceptez-le dans le navigateur).
 
-## Contributing
-This implementation is pragmatic and far from uncriticisable. It is a conceptual approach to using API Platform on top of a domain model, not a template to copy verbatim.
+### Si un port est déjà pris
 
-Issues and pull requests are welcome, especially if something does not fit your use case. Please make sure `castor ci` passes before opening one.
+L'application utilise les ports 80 et 443, la base le port 5432. Si `docker compose up` répond `port is already allocated`, choisissez d'autres ports, dans le même terminal :
 
-## Authors
-[Mathias Arlaud](https://github.com/mtarld) with the help of [Robin Chalas](https://github.com/chalasr)
+```
+export HTTP_PORT=8080 HTTPS_PORT=8443 HTTP3_PORT=8443 POSTGRES_PORT=15432
+docker compose up -d --wait
+```
+
+Sous PowerShell : `$env:HTTP_PORT="8080"; $env:HTTPS_PORT="8443"; $env:HTTP3_PORT="8443"; $env:POSTGRES_PORT="15432"`. L'API est alors sur https://localhost:8443/api. Refaites l'`export` dans chaque nouveau terminal avant un `docker compose up`.
+
+## Au quotidien
+
+```
+docker compose up -d --wait         # démarrer
+docker compose exec php bash        # ouvrir un shell dans le conteneur
+docker compose stop                 # arrêter
+```
+
+Dans le shell du conteneur, les commandes ci-dessous se lancent sans le préfixe `docker compose exec php`.
+
+## Vérifier son travail
+
+```
+docker compose exec php bin/phpunit                          # tous les tests
+docker compose exec php bin/phpunit --testdox                # les tests, lus comme des phrases
+docker compose exec php bin/phpunit --filter DiscountBook    # les tests dont le nom contient DiscountBook
+docker compose exec php vendor/bin/deptrac analyse -c deptrac_bc.yaml --fail-on-uncovered --report-uncovered --no-progress
+docker compose exec php vendor/bin/deptrac analyse -c deptrac_hexa.yaml --fail-on-uncovered --report-uncovered --no-progress
+docker compose exec php vendor/bin/phpstan analyse --memory-limit=512M
+```
+
+- Les tests utilisent leur propre base (`app_test`), créée au premier lancement : ils ne touchent pas à vos données de dev.
+- `deptrac_bc.yaml` vérifie les **contextes** (BookStore, Subscription, Shared), `deptrac_hexa.yaml` les **couches** (Domain, Application, Infrastructure).
+- Le style et les refactorings automatiques, comme en CI : `vendor/bin/php-cs-fixer fix --dry-run --diff` et `vendor/bin/rector process --dry-run` (sans `--dry-run`, ils corrigent).
+
+Le fichier `castor.php` regroupe les mêmes commandes pour [Castor](https://castor.jolicode.com) ; il n'est pas nécessaire de l'installer.
+
+## Déroulé du TP
+
+| Branche | Contenu |
+|---|---|
+| `etape-0` | Le point de départ : l'énoncé du TP et les tests à faire passer |
+| `etape-1` | La solution |
+
+Travaillez dans une branche à vous (le préfixe `origin/` est nécessaire : après le clone, seule `etape-0` existe en local) :
+
+```
+git switch -c tp-binome origin/etape-0
+```
+
+En retard ou bloqué ? Regardez ce que la solution change, `git diff origin/etape-0 origin/etape-1`, ou repartez-en : `git switch -c tp-solution origin/etape-1`.
+
+Après un changement de branche, remettez la base de dev à jour : `docker compose exec php bin/console doctrine:schema:update --force`.
+
+## En cas de problème
+
+- **`Cannot connect to the Docker daemon`** : Docker n'est pas démarré. Lancez-le et attendez qu'il soit prêt.
+- **`port is already allocated`** : voir « Si un port est déjà pris ».
+- **`service "php" is not running`** : lancez d'abord `docker compose up -d --wait`.
+- **Lenteur sous Windows** : clonez le dépôt dans le système de fichiers WSL (`~/` sous Ubuntu) plutôt que dans `C:\Users\...`.
+- **Proxy ou réseau d'entreprise qui bloque Docker Hub, GitHub ou Packagist** : prévenez le formateur avant la formation.
