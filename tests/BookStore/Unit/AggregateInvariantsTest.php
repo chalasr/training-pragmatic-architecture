@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\BookStore\Unit;
 
 use App\BookStore\Application\Command\PlaceOrderCommand;
+use App\BookStore\Domain\Event\BookDiscounted;
 use App\BookStore\Domain\Event\BookPublished;
 use App\BookStore\Domain\Model\Category;
 use App\BookStore\Domain\Model\Order;
@@ -25,6 +26,7 @@ use App\BookStore\Domain\ValueObject\ReviewId;
 use App\BookStore\Domain\ValueObject\ReviewRating;
 use App\Tests\BookStore\Factory\BookFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 
@@ -133,6 +135,20 @@ final class AggregateInvariantsTest extends TestCase
 
         self::assertCount(1, $book->releaseEvents());
         self::assertSame([], $book->releaseEvents());
+    }
+
+    #[Group('tp')]
+    public function testADiscountIsRecorded(): void
+    {
+        $book = BookFactory::create(name: 'Dune', price: 1500);
+        $book->releaseEvents();
+
+        $book->applyDiscount(new Discount(20));
+
+        self::assertEquals(
+            [new BookDiscounted($book->id, new BookName('Dune'), new Price(1500), new Price(1200))],
+            $book->releaseEvents(),
+        );
     }
 
     #[DataProvider('discounts')]

@@ -8,7 +8,10 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use App\BookStore\Domain\Repository\BookRepositoryInterface;
 use App\BookStore\Domain\ValueObject\Price;
 use App\BookStore\Infrastructure\ApiPlatform\Resource\BookResource;
+use App\Shared\Domain\Event\Integration\BookDiscounted;
 use App\Tests\BookStore\Factory\BookFactory;
+use App\Tests\Shared\Spy\EventBusSpy;
+use PHPUnit\Framework\Attributes\Group;
 
 final class DiscountBookTest extends ApiTestCase
 {
@@ -59,5 +62,33 @@ final class DiscountBookTest extends ApiTestCase
         ]);
 
         self::assertEquals(new Price(1000), $bookRepository->get($book->id)->price);
+    }
+
+    #[Group('tp')]
+    public function testADiscountIsPublishedAsAnIntegrationEvent(): void
+    {
+        $client = self::createClient();
+
+        /** @var BookRepositoryInterface $bookRepository */
+        $bookRepository = self::getContainer()->get(BookRepositoryInterface::class);
+
+        $book = BookFactory::create(name: 'Dune', price: 1500);
+        $bookRepository->add($book);
+
+        $client->request('POST', \sprintf('/api/books/%s/discount', $book->id), [
+            'json' => [
+                'discountPercentage' => 20,
+            ],
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        /** @var EventBusSpy $eventBus */
+        $eventBus = self::getContainer()->get(EventBusSpy::class);
+
+        self::assertEquals(
+            new BookDiscounted((string) $book->id, 'Dune', 1500, 1200),
+            $eventBus->findDispatched(BookDiscounted::class),
+        );
     }
 }
