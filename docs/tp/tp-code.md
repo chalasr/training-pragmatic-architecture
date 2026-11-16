@@ -1,10 +1,22 @@
 # TP de code : hexagonal, événementiel, CQRS
 
-**Durée** : 45 min, chacun sur sa machine · **Partir de** `etape-0` · **Solution** `etape-1`
+**Durée** : de 9h15 à 10h30, chacun sur sa machine · **Partir de** `etape-0` · **Solution** `etape-1`
 
 ```
 git switch -c tp origin/etape-0
 ```
+
+## Le déroulé de ce matin
+
+Vous travaillez seuls. Le formateur n'est pas disponible de 9h45 à 10h30.
+
+- **9h15** : début de l'étape 1.
+- **10h15** : si l'étape 1 n'est pas verte, lancez la commande du [point de rattrapage](#le-point-de-rattrapage-10h15), puis passez à l'étape 2.
+- **10h30** : débrief.
+
+Bloqué ? Ouvrez les indices de l'étape 1 (les blocs « Indice »), du plus léger au plus complet. Si vous êtes toujours bloqué, lancez la commande du point de rattrapage. Vous pouvez écrire vos questions dans le chat de la visio : on y répond à 10h30.
+
+Vous avez fini ? Lisez la section « [Pour aller plus loin](#pour-aller-plus-loin--à-étudier-dans-la-solution) » et répondez à ses questions par écrit ; on en parle au débrief.
 
 ## Objectif
 
@@ -27,7 +39,7 @@ La remise vit dans **BookStore** (hexagonal, CQRS). Les abonnés vivent dans **S
 
 ## À faire
 
-### Étape 1 : l'événement publié (30 min)
+### Étape 1 : l'événement publié (jusqu'à 10h15)
 
 1. **L'événement interne.** Créez `src/BookStore/Domain/Event/BookDiscounted.php`, avec des value objects comme `BookPublished` : `bookId` (`BookId`), `name` (`BookName`), `previousPrice` et `price` (`Price`). `Book::applyDiscount()` l'enregistre.
 2. **Sa publication.** `DiscountBookCommandHandler` publie les événements du livre, comme `CreateBookCommandHandler`.
@@ -124,9 +136,9 @@ foreach ($book->releaseEvents() as $event) {
 
 </details>
 
-#### Le point de rattrapage (16h40)
+#### Le point de rattrapage (10h15)
 
-L'étape 2 est la leçon principale du TP : tout le monde doit la vivre. À 16h40, si l'étape 1 n'est pas verte, récupérez sa solution, et seulement elle, d'une seule commande :
+L'étape 2 est la leçon principale du TP : tout le monde doit la vivre. À 10h15, si l'étape 1 n'est pas verte, récupérez sa solution, et seulement elle, d'une seule commande :
 
 ```
 git fetch origin
@@ -162,7 +174,7 @@ Les commandes sont à préfixer par `docker compose exec php`, sauf dans le shel
 - Pendant l'erreur volontaire, l'annonce partait-elle quand même ? Qu'est-ce que ça dit de la valeur d'un test d'architecture ?
 - Qui est upstream, qui est downstream ? Qui possède le contrat `BookDiscounted`, et qui a le droit de le changer ?
 - Si l'annonce échoue, la remise est-elle annulée ?
-- Pour demain matin : que faudrait-il changer pour que Subscription devienne un service à part ?
+- Pour l'atelier 4 : que faudrait-il changer pour que Subscription devienne un service à part ?
 
 ## Pour aller plus loin : à étudier dans la solution
 
