@@ -18,7 +18,7 @@ final readonly class CreateBookCommandHandler
     ) {
     }
 
-    public function __invoke(CreateBookCommand $command): void
+    public function __invoke(CreateBookCommand $command): Book
     {
         $book = new Book(
             $command->id,
@@ -35,5 +35,7 @@ final readonly class CreateBookCommandHandler
         foreach ($book->releaseEvents() as $event) {
             $this->eventBus->dispatch($event);
         }
+
+        return $book;
     }
 }

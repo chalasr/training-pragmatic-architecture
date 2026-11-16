@@ -48,18 +48,4 @@ deptrac:
               - { type: classLike, value: ^Doctrine\\Common\\Collections }
 
     ruleset:
-        Domain:
-            - Helpers
-            - Attributes
-
-        Application:
-            - Domain
-            - Helpers
-            - Attributes
-
-        Infrastructure:
-            - Domain
-            - Application
-            - Vendors
-            - Helpers
-            - Attributes
+        # à compléter

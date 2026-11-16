@@ -139,7 +139,7 @@ final class Book
         return $review;
     }
 
-    public function classify(Category $category, \DateTimeImmutable $at): void
+    public function classify(Category $category, \DateTimeImmutable $at = new \DateTimeImmutable()): void
     {
         if (!$this->isClassifiedAs($category)) {
             $this->classificationCollection->add(new Classification($this, $category, $at));

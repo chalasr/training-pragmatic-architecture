@@ -28,6 +28,4 @@ deptrac:
               - { type: classLike, value: ^Mcp\\ }
 
     ruleset:
-        BookStore: [ Shared, Vendors ]
-        Subscription: [ Shared, Vendors ]
-        Shared: [ Vendors ]
+        # à compléter
