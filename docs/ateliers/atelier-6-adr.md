@@ -38,6 +38,10 @@ Chosen option: "{option retenue}", because {justification}.
 * Good, because {ce que l'on gagne}
 * Bad, because {ce que l'on accepte de perdre}
 
+### Confirmation
+
+{comment on vérifiera que la décision est respectée : un test, une règle deptrac, une revue}
+
 ## More Information
 
 {lien vers docs/architecture.md}
@@ -54,7 +58,8 @@ Le modèle officiel, avec toutes les sections : [adr-template.md](https://github
    - *Decision Drivers* : les scénarios de qualité qui ont compté ;
    - *Considered Options* : A et B ;
    - *Decision Outcome* : votre choix et vos 5 lignes de justification ;
-   - *Consequences* : ce que vous gagnez (`Good, because`) et ce que vous acceptez de perdre (`Bad, because`).
+   - *Consequences* : ce que vous gagnez (`Good, because`) et ce que vous acceptez de perdre (`Bad, because`) ;
+   - *Confirmation* : comment on saura que la décision est respectée. Un test ? Une règle deptrac ? Une revue ?
 
    *Terminé quand* : chaque section contient au moins une phrase.
 3. **Reliez les deux documents.** Dans `docs/architecture.md`, ajoutez un lien vers `decisions/0001-<slug>.md`. Dans l'ADR, section *More Information*, ajoutez un lien vers `../architecture.md`.
